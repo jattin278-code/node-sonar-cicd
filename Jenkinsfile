@@ -22,18 +22,21 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('sonar-server') {
-                    sh '''
-                    $SCANNER_HOME/bin/sonar-scanner \
+                    sh """
+                    ${SCANNER_HOME}/bin/sonar-scanner \
                     -Dsonar.projectKey=node-sonar \
-                    -Dsonar.sources=.
-                    '''
+                    -Dsonar.sources=. \
+                    -Dsonar.host.url=http://sonarqube:9000
+                    """
                 }
             }
         }
 
         stage('Quality Gate') {
             steps {
-                waitForQualityGate abortPipeline: true
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
             }
         }
 
@@ -45,7 +48,8 @@ pipeline {
 
         stage('Run Container') {
             steps {
-                sh 'docker run -d -p 3000:3000 node-sonar-app'
+                sh 'docker rm -f node-sonar-container || true'
+                sh 'docker run -d -p 3000:3000 --name node-sonar-container node-sonar-app'
             }
         }
 
