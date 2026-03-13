@@ -1,12 +1,8 @@
 pipeline {
     agent any
 
-    tools {
-        nodejs "nodejs"
-    }
-
     environment {
-        SONAR_SCANNER_HOME = tool "sonar-scanner"
+        SCANNER_HOME = tool 'sonar-scanner'
     }
 
     stages {
@@ -23,15 +19,13 @@ pipeline {
             }
         }
 
-        stage('SonarQube Scan') {
+        stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('sonar-server') {
                     sh '''
-                    $SONAR_SCANNER_HOME/bin/sonar-scanner \
-                    -Dsonar.projectKey=node-sonar-project \
-                    -Dsonar.sources=. \
-                    -Dsonar.host.url=http://localhost:9000 \
-                    -Dsonar.login=YOUR_SONAR_TOKEN
+                    $SCANNER_HOME/bin/sonar-scanner \
+                    -Dsonar.projectKey=node-sonar \
+                    -Dsonar.sources=.
                     '''
                 }
             }
@@ -49,7 +43,7 @@ pipeline {
             }
         }
 
-        stage('Run Docker Container') {
+        stage('Run Container') {
             steps {
                 sh 'docker run -d -p 3000:3000 node-sonar-app'
             }
