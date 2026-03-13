@@ -1,56 +1,59 @@
 pipeline {
     agent any
 
+    tools {
+        nodejs "nodejs"
+    }
+
     environment {
-        IMAGE_NAME = "node-sonar-cicd"
-        CONTAINER_NAME = "node-sonar-container"
+        SONAR_SCANNER_HOME = tool "sonar-scanner"
     }
 
     stages {
 
-        stage('Clean Workspace') {
+        stage('Checkout Code') {
             steps {
-                cleanWs()
+                checkout scm
             }
         }
 
-        stage('Clone Repo') {
-    steps {
-        git 'https://github.com/jattin278-code/node-sonar-cicd.git'
-    }
-}
+        stage('Install Dependencies') {
+            steps {
+                sh 'npm install'
+            }
+        }
 
         stage('SonarQube Scan') {
             steps {
-                script {
-                    def scannerHome = tool 'sonar-scanner'
-                    withSonarQubeEnv('SonarQube') {
-                        sh "${scannerHome}/bin/sonar-scanner"
-                    }
+                withSonarQubeEnv('sonar-server') {
+                    sh '''
+                    $SONAR_SCANNER_HOME/bin/sonar-scanner \
+                    -Dsonar.projectKey=node-sonar-project \
+                    -Dsonar.sources=. \
+                    -Dsonar.host.url=http://localhost:9000 \
+                    -Dsonar.login=YOUR_SONAR_TOKEN
+                    '''
                 }
             }
         }
 
         stage('Quality Gate') {
             steps {
-                timeout(time: 2, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
-                }
+                waitForQualityGate abortPipeline: true
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $IMAGE_NAME .'
+                sh 'docker build -t node-sonar-app .'
             }
         }
 
-        stage('Run Container') {
+        stage('Run Docker Container') {
             steps {
-                sh 'docker rm -f $CONTAINER_NAME || true'
-                sh 'docker run -d -p 8085:3000 --name $CONTAINER_NAME $IMAGE_NAME'
+                sh 'docker run -d -p 3000:3000 node-sonar-app'
             }
         }
+
     }
 }
-
