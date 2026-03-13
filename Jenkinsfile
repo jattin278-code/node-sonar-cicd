@@ -15,10 +15,10 @@ pipeline {
         }
 
         stage('Clone Repo') {
-            steps {
-                git branch: 'main', url: 'https://github.com/YOUR-USERNAME/node-sonar-cicd.git'
-            }
-        }
+    steps {
+        git 'https://github.com/jattin278-code/node-sonar-cicd.git'
+    }
+}
 
         stage('SonarQube Scan') {
             steps {
